@@ -1,0 +1,6 @@
+pkg/
+.idea/
+go.sum
+fileserver.conf
+*.exe
+file-server
