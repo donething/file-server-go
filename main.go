@@ -26,14 +26,16 @@ func main() {
 
 	// 准许指定域名的 CORS
 	// 域名为 nginx 中当前 web 网站的监听地址和端口
-	router.Use(CORS("http://127.0.0.1:10012"))
+	//router.Use(CORS("http://127.0.0.1:10012"))
+	router.Use(Cors())
 
 	// 使用 gzip 压缩，语句"gzip.Gzip(gzip.DefaultCompression)"不能放在Middleware()中，否则无效
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(TokenAuthMiddleware)
 
 	router.GET("/", func(c *gin.Context) {
-		c.String(http.StatusForbidden, "")
+		log.Printf("禁止访问\n")
+		c.String(http.StatusForbidden, "禁止访问")
 	})
 	router.GET("/api/file", FileHandler)
 
@@ -100,8 +102,8 @@ func FileHandler(c *gin.Context) {
 func TokenAuthMiddleware(c *gin.Context) {
 	auth := c.GetHeader("Authorization")
 	token := Conf.Auth
-	// 当操作为浏览、下载时，不需验证
-	if c.Query("op") == "list" || c.Query("op") == "down" {
+	// 当操作不为删除文件时不需验证
+	if c.Query("op") != "del" {
 		c.Next()
 		return
 	}
@@ -114,18 +116,36 @@ func TokenAuthMiddleware(c *gin.Context) {
 	}
 }
 
-// 准许指定域名的 CORS
-func CORS(host string) gin.HandlerFunc {
+// 准许 CORS
+func Cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", host)
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
+		method := c.Request.Method
+		origin := c.Request.Header.Get("Origin") //请求头部
+		if origin != "" {
+			//接收客户端发送的origin （重要！）
+			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+			//服务器支持的所有跨域请求的方法
+			c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE,UPDATE")
+			//允许跨域设置可以返回其他子段，可以自定义字段
+			c.Header("Access-Control-Allow-Headers", "Authorization, Content-Length, X-CSRF-Token, Token,session")
+			// 允许浏览器（客户端）可以解析的头部 （重要）
+			c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers")
+			//设置缓存时间
+			c.Header("Access-Control-Max-Age", "172800")
+			//允许客户端传递校验信息比如 cookie (重要)
+			c.Header("Access-Control-Allow-Credentials", "true")
 		}
+
+		// 允许类型校验
+		if method == "OPTIONS" {
+			c.JSON(http.StatusOK, "ok!")
+		}
+
+		defer func() {
+			if err := recover(); err != nil {
+				log.Printf("Panic info is: %v", err)
+			}
+		}()
 
 		c.Next()
 	}
