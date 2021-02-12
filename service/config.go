@@ -5,6 +5,7 @@ import (
 	"file-server-go/model"
 	"github.com/donething/utils-go/dofile"
 	"log"
+	"os"
 )
 
 const (
@@ -21,8 +22,8 @@ func init() {
 	if !exists {
 		// 触发配置文件不存在错误时，创建它
 		saveConfig()
-		log.Printf("请填写配置文件\n")
-		return
+		log.Printf("请填写配置文件后，重新运行本程序\n")
+		os.Exit(0)
 	}
 
 	data, err := dofile.Read(path)
