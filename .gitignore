@@ -3,4 +3,4 @@ pkg/
 go.sum
 fileserver.conf
 *.exe
-file-server
+file-server-go
