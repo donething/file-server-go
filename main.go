@@ -16,6 +16,8 @@ import (
 func init() {
 	// 输出的格式
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile) // 打印 log 时显示时间戳
+	// 配置文件
+	Init(getConfPath())
 }
 
 func main() {
@@ -43,6 +45,15 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
+// 获取配置文件路径
+func getConfPath() string {
+	if len(os.Args) <= 1 {
+		log.Printf("需要指定配置文件的路径参数")
+		os.Exit(0)
+	}
+	return os.Args[1]
+}
+
 // /api/file?op=list&rel=.
 func FileHandler(c *gin.Context) {
 	operator := c.Query("op")
@@ -50,6 +61,8 @@ func FileHandler(c *gin.Context) {
 
 	// 路径越界检查
 	path := filepath.Join(Conf.RootDir, rel)
+	log.Printf("收到的路径参数：%s\n", path)
+
 	if path, allow := CheckPath(path); !allow {
 		log.Printf("禁止访问更前面的路径(%s)\n", path)
 		c.JSON(http.StatusOK, JResult{Success: false, Code: 20, Msg: "禁止访问更前面的路径"})

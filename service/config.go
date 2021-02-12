@@ -8,16 +8,17 @@ import (
 	"os"
 )
 
-const (
-	// 配置文件名
-	ConfigFile = `fileserver.conf`
-)
+// 配置文件名
+var ConfigFile = ""
 
 // 初始化配置
 var Conf = model.Config{RootDir: ".", Auth: ""}
 
-func init() {
-	path := ConfigFile
+// 读取配置文件
+func Init(path string) {
+	ConfigFile = path
+	log.Printf("配置文件的路径：%s\n", path)
+
 	exists, err := dofile.Exists(path)
 	if !exists {
 		// 触发配置文件不存在错误时，创建它
@@ -26,6 +27,7 @@ func init() {
 		os.Exit(0)
 	}
 
+	// 读取配置
 	data, err := dofile.Read(path)
 	if err != nil {
 		log.Printf("读取配置文件(%s)出错：%s\n", path, err)
@@ -37,6 +39,7 @@ func init() {
 		log.Printf("解析配置文件(%s)错误：%v\n", path, errParse)
 		return
 	}
+	log.Printf("已读取配置：%+v\n", Conf)
 }
 
 func saveConfig() bool {
