@@ -3,6 +3,7 @@ package main
 import (
 	. "file-server-go/model"
 	. "file-server-go/service"
+	"fmt"
 	"github.com/donething/utils-go/dofile"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
@@ -82,6 +83,7 @@ func FileHandler(c *gin.Context) {
 		c.Header("Content-Transfer-Encoding", "binary")
 		c.Header("Content-Disposition", "attachment; filename="+fi.Name())
 		c.Header("Content-Type", "application/octet-stream")
+		c.Header("Accept-Length", fmt.Sprintf("%d", fi.Size()))
 		log.Printf("开始提供路径(%s)的下载\n", path)
 		c.File(path)
 		break
