@@ -44,7 +44,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
-// /api/file?op=list&rel=.
+// FileHandler /api/file?op=list&rel=.
 func FileHandler(c *gin.Context) {
 	operator := c.Query("op")
 	rel := c.Query("rel")

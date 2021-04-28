@@ -3,7 +3,7 @@ package service
 import (
 	. "file-server-go/model"
 	"file-server-go/tool"
-	"github.com/donething/utils-go/dostr"
+	"github.com/donething/utils-go/dotext"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// 获取指定路径下的文件列表
+// ListFiles 获取指定路径下的文件列表
 func ListFiles(path string) JResult {
 	filesList, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -31,7 +31,7 @@ func ListFiles(path string) JResult {
 	for i := 0; i < len(filesList); i++ {
 		f := FileDesp{
 			Name:  filesList[i].Name(),
-			Last:  dostr.FormatDate(filesList[i].ModTime(), dostr.TimeFormatDefault),
+			Last:  dotext.FormatDate(filesList[i].ModTime(), dotext.TimeFormatDefault),
 			Size:  tool.BytesHumanReadable(filesList[i].Size()),
 			IsDir: filesList[i].IsDir(),
 		}
@@ -41,7 +41,7 @@ func ListFiles(path string) JResult {
 	return JResult{Success: true, Code: 10, Msg: "文件列表", Data: files}
 }
 
-// 删除文件
+// DelFile 删除文件
 func DelFile(path string) JResult {
 	if err := os.RemoveAll(path); err != nil {
 		log.Printf("删除文件(%s)失败：%v\n", path, err)
@@ -51,7 +51,7 @@ func DelFile(path string) JResult {
 	return JResult{Success: true, Code: 10, Msg: "删除文件成功", Data: path}
 }
 
-// 检查路径是否合法或越界，不允许访问所设根目录更前的位置
+// CheckPath 检查路径是否合法或越界，不允许访问所设根目录更前的位置
 func CheckPath(path string) (string, bool) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
