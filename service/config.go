@@ -19,7 +19,7 @@ func init() {
 	if len(os.Args) >= 2 {
 		ConfigPath = os.Args[1]
 	}
-	logger.Info.Printf("配置文件的路径：%s\n", ConfigPath)
+	logger.Info.Printf("读取配置文件：%s\n", ConfigPath)
 
 	exists, err := dofile.Exists(ConfigPath)
 	if !exists {
@@ -33,15 +33,21 @@ func init() {
 	data, err := dofile.Read(ConfigPath)
 	if err != nil {
 		logger.Error.Printf("读取配置文件(%s)出错：%s\n", ConfigPath, err)
-		return
+		os.Exit(0)
 	}
 
-	errParse := json.Unmarshal(data, &Conf)
-	if errParse != nil {
-		logger.Error.Printf("解析配置文件(%s)错误：%v\n", ConfigPath, errParse)
-		return
+	err = json.Unmarshal(data, &Conf)
+	if err != nil {
+		logger.Error.Printf("解析配置文件(%s)错误：%v\n", ConfigPath, err)
+		os.Exit(0)
 	}
 	logger.Info.Printf("已读取配置：%+v\n", Conf)
+
+	// 判断配置是否有效
+	if Conf.Root == "" {
+		logger.Warn.Printf("配置中'root'路径为空，请先填写再运行本程序")
+		os.Exit(0)
+	}
 }
 
 func saveConfig() bool {
@@ -55,6 +61,5 @@ func saveConfig() bool {
 		logger.Error.Printf("保存配置到文件失败：%v\n", err)
 		return false
 	}
-	logger.Info.Printf("配置保存完成\n")
 	return true
 }
