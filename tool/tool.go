@@ -5,14 +5,14 @@ import (
 	"fmt"
 )
 
-// 返回字符串的 md5 值
+// MD5Str 返回字符串的 md5 值
 func MD5Str(str string) (m string) {
 	m5 := md5.Sum([]byte(str))
 	m = fmt.Sprintf("%x", m5)
 	return
 }
 
-// 将字节转为可读的字符（如"102MB"）
+// BytesHumanReadable 将字节转为可读的字符（如"102MB"）
 // https://stackoverflow.com/a/30822306
 func BytesHumanReadable(bytes int64) string {
 	var kb int64 = 1024

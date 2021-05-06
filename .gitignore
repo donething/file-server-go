@@ -1,6 +1,7 @@
 pkg/
 .idea/
 go.sum
-fileserver.conf
-*.exe
 file-server-go
+file-server.json
+*.exe
+*.log

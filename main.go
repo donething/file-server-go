@@ -1,6 +1,7 @@
 package main
 
 import (
+	"file-server-go/logger"
 	. "file-server-go/model"
 	. "file-server-go/service"
 	"fmt"
@@ -13,11 +14,6 @@ import (
 	"path/filepath"
 	"strings"
 )
-
-func init() {
-	// 输出的格式
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile) // 打印 log 时显示时间戳
-}
 
 func main() {
 	port := "20200"
@@ -35,12 +31,12 @@ func main() {
 	router.Use(TokenAuthMiddleware)
 
 	router.GET("/", func(c *gin.Context) {
-		log.Printf("禁止访问\n")
+		logger.Warn.Printf("禁止访问\n")
 		c.String(http.StatusForbidden, "禁止访问")
 	})
 	router.GET("/api/file", FileHandler)
 
-	log.Printf("开始服务：http://127.0.0.1:%s\n", port)
+	logger.Info.Printf("开始服务：http://127.0.0.1:%s\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
@@ -50,18 +46,18 @@ func FileHandler(c *gin.Context) {
 	rel := c.Query("rel")
 
 	// 路径越界检查
-	path := filepath.Join(Conf.RootDir, rel)
-	log.Printf("收到的路径参数：%s\n", path)
+	path := filepath.Join(Conf.Root, rel)
+	logger.Info.Printf("收到的路径参数：%s\n", path)
 
 	if path, allow := CheckPath(path); !allow {
-		log.Printf("禁止访问更前面的路径(%s)\n", path)
+		logger.Warn.Printf("禁止访问更前面的路径(%s)\n", path)
 		c.JSON(http.StatusOK, JResult{Success: false, Code: 20, Msg: "禁止访问更前面的路径"})
 		return
 	}
 	// 获取指定路径的信息
 	fi, err := os.Stat(path)
 	if err != nil {
-		log.Printf("获取文件(%s)信息时出错：%s\n", path, err)
+		logger.Error.Printf("获取文件(%s)信息时出错：%s\n", path, err)
 		c.JSON(http.StatusOK, JResult{Success: false, Code: 21, Msg: "获取文件信息时：" + err.Error()})
 	}
 
@@ -73,36 +69,36 @@ func FileHandler(c *gin.Context) {
 	case "del":
 		c.JSON(http.StatusOK, DelFile(path))
 		break
-	case "down":
+	case "download":
 		if fi.IsDir() {
-			log.Printf("指定的文件路径(%s)为目录，不支持下载\n", path)
-			c.JSON(http.StatusOK, JResult{Success: false, Code: 22, Msg: "指定的文件路径为目录"})
+			logger.Warn.Printf("指定的文件路径(%s)为目录，不支持下载\n", path)
+			c.JSON(http.StatusOK, JResult{Success: false, Code: 22, Msg: "指定的文件路径为目录，不支持下载"})
 			return
 		}
 		c.Header("Content-Description", "File Transfer")
 		c.Header("Content-Transfer-Encoding", "binary")
 		c.Header("Content-Disposition", "attachment; filename="+fi.Name())
 		c.Header("Content-Type", "application/octet-stream")
-		c.Header("Content-Length", fmt.Sprintf("%d", fi.Size()))
-		log.Printf("开始提供路径(%s)的下载\n", path)
+		c.Header("Accept-Length", fmt.Sprintf("%d", fi.Size()))
+		logger.Info.Printf("开始提供文件(%s)的下载\n", path)
 		c.File(path)
 		break
 	case "md5":
 		md5, err := dofile.Md5(path)
 		if err != nil {
-			log.Printf("计算文件(%s)的md5值出错：%s\n", path, err)
+			logger.Error.Printf("计算文件(%s)的md5值出错：%s\n", path, err)
 			c.JSON(http.StatusOK, JResult{Success: false, Code: 23, Msg: "计算文件md5值出错"})
 			return
 		}
 		c.JSON(http.StatusOK, JResult{Success: true, Code: 10, Msg: "文件的MD5值", Data: md5})
 		break
 	default:
-		log.Printf("未知的操作：%s: %s\n", operator, rel)
+		logger.Error.Printf("未知的操作：%s: %s\n", operator, rel)
 		c.JSON(http.StatusOK, JResult{Success: false, Code: 24, Msg: "未知的操作"})
 	}
 }
 
-// 授权验证中间件
+// TokenAuthMiddleware 授权验证中间件
 func TokenAuthMiddleware(c *gin.Context) {
 	auth := c.GetHeader("Authorization")
 	token := Conf.Auth
@@ -114,13 +110,13 @@ func TokenAuthMiddleware(c *gin.Context) {
 
 	if auth != token {
 		// c.AbortWithStatus(http.StatusUnauthorized)
-		log.Printf("授权验证错误：'%s'\n", auth)
+		logger.Warn.Printf("授权验证错误：'%s'\n", auth)
 		c.String(http.StatusUnauthorized, "未授权的访问")
 		c.Abort()
 	}
 }
 
-// 准许 CORS
+// Cors 准许 CORS
 func Cors() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		method := c.Request.Method
@@ -147,7 +143,7 @@ func Cors() gin.HandlerFunc {
 
 		defer func() {
 			if err := recover(); err != nil {
-				log.Printf("Panic info is: %v", err)
+				logger.Error.Printf("Panic info is: %v", err)
 			}
 		}()
 
