@@ -12,7 +12,7 @@ import (
 var ConfigPath = "file-server.json"
 
 // Conf 初始化配置
-var Conf = model.Config{Root: ".", Auth: ""}
+var Conf = model.Config{Root: "", Auth: ""}
 
 // 读取配置文件
 func init() {
